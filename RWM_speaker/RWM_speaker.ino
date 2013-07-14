@@ -10,11 +10,12 @@ Written by Halie Murray-Davis for Real World Measurements. 3/29/2013.
 int leds []= {0, 1, 2, 3, 4}; //set pins for LEDS
 int melody []= {NOTE_A3, NOTE_C4, NOTE_E4, NOTE_A5, NOTE_F4};
 int rhythm[] = {2, 1, 1, 4, 8};
-int fakesensor = A0;
+int thermocouple = A0;
 int thermistor = A1;
 
 void setup() {
-    pinMode(fakesensor, INPUT);
+    int currentstate =0;
+    pinMode(thermocouple, INPUT);
     for (int x=0; x<5; x++) {
       pinMode(leds [x], OUTPUT);
       leds[x]=LOW;
@@ -24,55 +25,53 @@ void setup() {
 
 void loop() {
   //Serial.print("Hello world.");totestserialport
-  int val = analogRead(fakesensor);    // read the input pin
-  //Serial.println(val);             // debug value
-  int currentstate =0;
+  int val = analogRead(thermistor);    // read the input pin
+  Serial.println("Thermistor");
+  Serial.println(val);   // debug value
+  Serial.println(" "); //makes space between outputs in serial port
   
-  //print statements!:
+  int thermocouple_val = analogRead(thermocouple);
+  Serial.println("Thermocouple");
+  Serial.println(thermocouple_val);
+  
   Serial.println(currentstate);
-  Serial.println("Outside");
-  Serial.println("Val");
-  Serial.println(val);
-  
+   
   switch (currentstate){
-    Serial.println("Inside Switch");
-    Serial.println(currentstate);
     
-    if (currentstate==1) {
-    currentstate=0;
+  case 1: //the do nothing case
+    if (thermocouple_val <= 500 && thermocouple_val >= 200) {
+      noTone(8);
     }
     
-    else {
-    currentstate++;
+    if (thermocouple_val >= 505 || thermocouple_val <= 195){
+      break;
     }
-  Serial.println(currentstate);
-  case 0: //the do nothing case
-    if (val <= 10) {
-    noTone(8);}
-    if (val >= 11){
-    break;}
         
-  case 1:
-    //while (val >= 300) {
-      Serial.println("It Worked!!!!!!!!!!!!!!!!!!!!!");
+  case 2:
+      Serial.println("Inside case one!!!");
       
-    if (val>=11){
+      if (thermocouple_val >=200 && thermocouple_val <= 500) {
+              break;
+            }
+      
         for (int thisNote=0; thisNote <5; thisNote++) {
           int rhythms=1000/rhythm[thisNote];
-          tone(8, melody[thisNote], rhythms);
-          int pause=rhythms * 1.3;
-          delay(pause);
-          noTone(8);
-        }
-         for (int y=0; y<4; y++) {
-           digitalWrite (leds [y], HIGH);
-         } 
-    } //end for if music loop
-    
-    if (val <= 10) {
-    break;
+            if (thermocouple_val >=200 && thermocouple_val <= 500) {
+              break;
+            }
+          
+            if (thermocouple_val >= 500 || thermocouple_val <= 200) {
+              digitalWrite (leds [1], HIGH);
+              tone(8, melody[thisNote], rhythms);
+              int pause=rhythms * 1.3;
+              delay(pause);
+              noTone(8);
+            }   //end for if music 
+        } //end for larger music loop which progresses through the notes
     }
-    
+    currentstate++;
+    if (currentstate >1) {
+      currentstate=0;
     }
 }
 
