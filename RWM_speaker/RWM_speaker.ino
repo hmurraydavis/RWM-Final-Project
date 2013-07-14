@@ -19,9 +19,9 @@ int thermocouple = A0;
 int thermistor = A1;
 int hydrometer = A2;
 int currentstate = 0;
-int thermocouple_upper_bound = 500;
-int thermocouple_lower_bound = 200;
-int thermocouple_error = 5;
+int max_temp = 50;
+int min_temp = 20;
+int temp_error = 5;
 int hydrometer_upper_bound = 20;
 int hydrometer_lower_bound = 15;
 int hydrometer_error = 5;
@@ -74,14 +74,14 @@ void loop() {
     
   case 1: //the do nothing case
       //makes it be silent if all is good:
-    if (thermocouple_val <= thermocouple_upper_bound && thermocouple_val >= thermocouple_lower_bound) {
+    if (temp_inside_box <= max_temp && temp_inside_box >= min_temp) {
       if (hydrometer_val >= hydrometer_lower_bound && hydrometer_val <= hydrometer_upper_bound) {
         noTone(8);
       }
     }
     
       //breaks to case 2 if the thermo couple escapes the acceptable range:
-    if (thermocouple_val >= thermocouple_upper_bound + thermocouple_error || thermocouple_val <= thermocouple_lower_bound - thermocouple_error){
+    if (temp_inside_box >= max_temp + temp_error || temp_inside_box <= min_temp - temp_error){
       break;
     }
     
@@ -95,7 +95,7 @@ void loop() {
       Serial.println("Inside case two--thermocouple outside of range!!!");
       
       //breaks if the temperature is OK:
-      if (thermocouple_val >=thermocouple_lower_bound - thermocouple_error && thermocouple_val + thermocouple_error <= thermocouple_upper_bound) {
+      if (temp_inside_box >=min_temp - temp_error && temp_inside_box <= max_temp + temp_error) {
          break;
       }
 
@@ -106,11 +106,11 @@ void loop() {
         //plays music if the temperature is an issue:
         for (int thisNote=0; thisNote <5; thisNote++) {
           int rhythms=1000/rhythm[thisNote];
-            if (thermocouple_val >=thermocouple_lower_bound && thermocouple_val <= thermocouple_upper_bound) { //checks temp before playing each note and will break if the temp is OK.
+            if (temp_inside_box <=max_temp && temp_inside_box >= min_temp) { //checks temp before playing each note and will break if the temp is OK.
               break;
             }
           
-            if (thermocouple_val >= thermocouple_upper_bound || thermocouple_val <= thermocouple_lower_bound) { //plays music if temperature is bad.
+            if (temp_inside_box >= max_temp || temp_inside_box <= min_temp) { //plays music if temperature is bad.
               digitalWrite (leds [0, 1], HIGH);
               tone(8, melody[thisNote], rhythms);
               int pause=rhythms * 1.3;
@@ -126,7 +126,7 @@ void loop() {
       }
 
       //breaks out of case if temperature is wrong: (OK, b/c will go to case 4 (both bad) and we know the humidity isn't good, if it's made it this far)
-      if (thermocouple_val - thermocouple_error >= thermocouple_upper_bound || thermocouple_val + thermocouple_error <= thermocouple_lower_bound) {
+      if (temp_inside_box + temp_error >= min_temp || temp_inside_box - temp_error <= max_temp) {
         break;
       }
       
@@ -138,7 +138,7 @@ void loop() {
                       break;
                 }    
           
-                if (thermocouple_val >= thermocouple_upper_bound || thermocouple_val <= thermocouple_lower_bound) {
+                if (hydrometer_val >= hydrometer_upper_bound || hydrometer_val <= hydrometer_lower_bound) {
                   digitalWrite (leds [2, 3], HIGH);
                   tone(8, melody2[thisNote2], rhythms);
                   int pause=rhythms * 1.3;
@@ -149,7 +149,7 @@ void loop() {
        } //ends the if loop which activates music playing if there are issues with hydrometer range.
        
     case 4:
-      if (thermocouple_val >= thermocouple_upper_bound || thermocouple_val <= thermocouple_lower_bound)   {
+      if (temp_inside_box >= max_temp || temp_inside_box <= min_temp)   {
         if (hydrometer_val >=hydrometer_upper_bound || hydrometer_val <= hydrometer_lower_bound){
             for (int thisNote4=0; thisNote4 < 3; thisNote4++) {
                 int rhythms=1000/rhythm4[thisNote4];
@@ -157,7 +157,7 @@ void loop() {
                     break;
                 }    
                 
-                if (thermocouple_val >= thermocouple_lower_bound || thermocouple_val <= thermocouple_upper_bound) {
+                if (temp_inside_box >= max_temp || temp_inside_box <= min_temp) {
                     break;
                 }
                 
@@ -177,5 +177,4 @@ void loop() {
       currentstate=0;
     }
 }
-
 
