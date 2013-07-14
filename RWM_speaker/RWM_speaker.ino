@@ -19,19 +19,15 @@ int thermocouple = A0;
 int thermistor = A1;
 int hydrometer = A2;
 int currentstate = 0;
-int max_temp = 35;
-int min_temp = 27;
-int temp_error = 0;
-int max_humidity = 10;
-int min_humidity = 20;
-
+int max_temp = 50;
+int min_temp = 20;
+int temp_error = 5;
 int hydrometer_upper_bound = 20;
 int hydrometer_lower_bound = 15;
 int hydrometer_error = 5;
 int roomtemp; //will be used to calibrate thermocuple, from thermistor
 int bTis; //the b value for the linear, roomtemp eq from thermistor
 int mTis; //the slope from the roomtemp eq from thermistor
-int  percent_humidity;
 
 void setup() {
     int currentstate =0;
@@ -49,32 +45,24 @@ void loop() {
   
   // read the sensor output off the appropriate pin and return it in a variable for later use. Also labels this and prints it to the serial port for easy de-bugging.
   int thermistor_val = analogRead(thermistor);    // read the input pin
- // Serial.println("Thermistor");
-  //Serial.println(thermistor_val);   // debug value
+  Serial.println("Thermistor");
+  Serial.println(thermistor_val);   // debug value
   
   int thermocouple_val = analogRead(thermocouple);
-  //Serial.println("Thermocouple");
-  //Serial.println(thermocouple_val);
+  Serial.println("Thermocouple");
+  Serial.println(thermocouple_val);
   
   int hydrometer_val = analogRead(hydrometer);
- //calculate the % humidity from the hydrometer input:
- percent_humidity = (5.3689 * hydrometer_val / 1024) - 0.2313;
-
-  //Serial.println("Hydrometer");
-  //Serial.println(hydrometer_val);
+  Serial.println("Hydrometer");
+  Serial.println(hydrometer_val);
   
   //get roomtemperature from thermistor:
   mTis = (30-20)/(1022-750);
   bTis = 25-(mTis * 875);
   roomtemp = (mTis * thermistor_val) + bTis; 
-  
- Serial.println("room remperature:" );
- Serial.println(roomtemp);
-  Serial.println(" " );
  
  // Emily's mystical, magical function which makes the analog read off the thermocouple into something useful
- int temp_inside_box = ( (5 * pow(10, -3)) * (pow(thermocouple_val,1)) ) + roomtemp; //add in roomtemb b/c that's cool and good, according the the mystical, magical one.
- Serial.println("temp_inside_box:" );
+ int temp_inside_box = (-35.6 * log (thermocouple_val) ) + 244.89 + roomtemp; //add in roomtemb b/c that's cool and good, according the the mystical, magical one.
  Serial.println(temp_inside_box);
 
   //begin code to switch between cases:
@@ -82,64 +70,53 @@ void loop() {
     //case 2= temperature problem
     //case 3= humidity problem
     //case 4 = both temperature and humidity problem 
-
+    
+  
+  
+  
+  
+  
+    if (temp_inside_box >= max_temp + temp_error || temp_inside_box <= min_temp - temp_error){
+      currentstate = 2;
+      Serial.println ("Temp too high.");
+           //breaks to case 3 (the oh-no-hydrometer case) if the hydrometer escapes the acceptable range:
+     if (hydrometer_val <= hydrometer_lower_bound - hydrometer_error || hydrometer_val >= hydrometer_upper_bound + hydrometer_error) {
+        currentstate = 3; //if there is a humidity problem, bypasses case 2
+      
+      
   switch (currentstate){
     
-  case 1: //the do nothing case
-      //makes it be silent if all is good:
-    if (temp_inside_box <= max_temp && temp_inside_box >= min_temp) {
-      if (hydrometer_val >= hydrometer_lower_bound && hydrometer_val <= hydrometer_upper_bound) {
-        noTone(8);
-      }
-    }
-    
-      //breaks to case 2 if the thermo couple escapes the acceptable range:
-    if (temp_inside_box >= max_temp + temp_error || temp_inside_box <= min_temp - temp_error){
-      //currentstate = 2;
-      Serial.println ("Temp too high.");
-      break;
-    }
 
-      //breaks to case 3 (the oh-no-hydrometer case) if the hydrometer escapes the acceptable range:
-     //if (hydrometer_val <= hydrometer_lower_bound - hydrometer_error || hydrometer_val >= hydrometer_upper_bound + hydrometer_error) {
-       // currentstate = 3; //if there is a humidity problem, bypasses case 2
-        //break;
-     //}
-        
   case 2: //thermocouple is outside range
       Serial.println("Inside case two--thermocouple outside of range!!!");
       
       //breaks if the temperature is OK:
       if (temp_inside_box >=min_temp - temp_error && temp_inside_box <= max_temp + temp_error) {
-        Serial.println ("Exited temperature too high case because temperature returned to good range.");
          break;
       }
 
-     /* 
-     //breaks if the humidity is bad:
-      if (hydrometer_val + hydrometer_error >= hydrometer_upper_bound || hydrometer_val - hydrometer_error <= hydrometer_lower_bound) {
-          Serial.println ("Exited temperature too high case because humidity was also bad.");
-          break; //don't need to re-assign currentstate b/c case 3 is the next one
-      }
-      */
-      Serial.println("Should play music. :(");
+      //breaks if the humidity is bad:
+     // if (hydrometer_val + hydrometer_error >= hydrometer_upper_bound || hydrometer_val - hydrometer_error <= hydrometer_lower_bound) {
+      //    break; //don't need to re-assign currentstate b/c case 3 is the next one
+     // }
         //plays music if the temperature is an issue:
         for (int thisNote=0; thisNote <5; thisNote++) {
           int rhythms=1000/rhythm[thisNote];
             if (temp_inside_box <=max_temp && temp_inside_box >= min_temp) { //checks temp before playing each note and will break if the temp is OK.
               break;
             }
+        
           
-            //if (temp_inside_box >= max_temp || temp_inside_box <= min_temp) { //plays music if temperature is bad.
+            if (temp_inside_box >= max_temp || temp_inside_box <= min_temp) { //plays music if temperature is bad.
               digitalWrite (leds [0, 1], HIGH);
               tone(8, melody[thisNote], rhythms);
               int pause=rhythms * 1.3;
               delay(pause);
               noTone(8);
-            //}   //end for if music 
+            }   //end for if music 
         } //end for larger music loop which progresses through the notes
-        
-    case 3: //hydrometer is outside range
+
+  case 3: //hydrometer is outside range
       //breaks out of case if hydrometer is within the correct bounds:
       Serial.println ("Why am i here?");
       if (hydrometer_val <= hydrometer_upper_bound + hydrometer_error || hydrometer_val >= hydrometer_lower_bound - hydrometer_error){
@@ -194,8 +171,17 @@ void loop() {
     
     } // end switch statements
     currentstate++;
-    if (currentstate >2) {
+    if (currentstate >1) {
       currentstate=0;
     }
+    }
+    }
 }
+     
+
+
+
+
+
+
 
